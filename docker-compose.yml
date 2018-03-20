@@ -1,0 +1,58 @@
+version: '3.3'
+
+services:
+  db:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: beaker
+      MYSQL_DATABASE: beaker
+      MYSQL_USER: beaker
+      MYSQL_PASSWORD: beaker
+    expose:
+      - "3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+
+  beaker-server.com:
+    hostname:
+      beaker-server.com
+    build:
+      context: .
+      dockerfile: dockerfiles/beaker-server.dockerfile
+    depends_on:
+      - db
+    image: beaker-server
+    environment:
+      BEAKER_USER: admin
+      BEAKER_PASS: testing
+    ports:
+      - "8000:80"
+    expose:
+      - "80"
+    volumes:
+      - ./start_beaker_server.sh:/usr/local/bin/start_beaker_server.sh
+    command: /usr/local/bin/start_beaker_server.sh
+
+  beaker-lab-controller.com:
+    hostname:
+      beaker-lab-controller.com
+    build:
+      context: .
+      dockerfile: dockerfiles/beaker-lab-controller.dockerfile
+    depends_on:
+      - beaker-server.com
+    image: beaker-lab-controller
+    environment:
+      BEAKER_USER: admin
+      BEAKER_PASS: testing
+      HUB_URL: http://beaker-server.com/bkr
+    ports:
+      - "8001:80"
+    expose:
+      - "80"
+    volumes:
+      - ./start_beaker_lab_controller.sh:/usr/local/bin/start_beaker_lab_controller.sh
+    command: /usr/local/bin/start_beaker_lab_controller.sh
+
+volumes:
+  dbdata: 
